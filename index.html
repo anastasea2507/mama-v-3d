@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Органайзер — параметрический генератор</title>
+<style>
+:root{--bg:#f4f5f7;--panel:#fff;--ink:#20242b;--muted:#68717d;--line:#e3e6eb;--accent:#5967d8;--accent2:#e8eaff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,Segoe UI,Arial,sans-serif}
+header{padding:22px max(20px,calc((100vw - 1160px)/2));background:#20242b;color:white}
+header h1{font-size:22px;margin:0 0 4px}header p{margin:0;color:#c8cdd5;font-size:13px}
+main{max-width:1160px;margin:22px auto;padding:0 18px;display:grid;grid-template-columns:320px 1fr;gap:18px}
+.panel,.preview{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:0 3px 14px #1c243008}
+h2{font-size:16px;margin:0 0 15px}.field{margin:0 0 13px}.field label{display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:600;margin-bottom:6px}.field small{font-weight:400;color:var(--muted)}
+input{width:100%;padding:10px 11px;border:1px solid #d8dce3;border-radius:9px;font:inherit;background:#fff;color:var(--ink)}
+input:focus{outline:2px solid #c9ceff;border-color:var(--accent)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.note{background:#f7f8fa;border-radius:10px;padding:11px;color:var(--muted);font-size:12px;margin:14px 0}
+button{border:0;border-radius:10px;padding:12px 14px;font:600 14px system-ui;cursor:pointer}
+.primary{background:var(--accent);color:white;width:100%}.secondary{background:var(--accent2);color:#3945a6;width:100%;margin-top:9px}
+.preview{min-height:540px;display:flex;flex-direction:column}.preview-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}.preview-head h2{margin:0}.tag{font-size:11px;background:#edf0f5;color:#59616d;border-radius:30px;padding:5px 9px}
+.canvas-wrap{flex:1;min-height:350px;background:linear-gradient(45deg,#fafbfc 25%,transparent 25%),linear-gradient(-45deg,#fafbfc 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#fafbfc 75%),linear-gradient(-45deg,transparent 75%,#fafbfc 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0;border:1px solid var(--line);border-radius:12px;display:grid;place-items:center;padding:20px;overflow:hidden}
+svg{max-width:100%;max-height:430px;filter:drop-shadow(0 7px 5px #20242b18)}
+.stats{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px}.stat{background:#f5f6f8;border-radius:9px;padding:8px 10px;font-size:12px;color:var(--muted)}.stat b{color:var(--ink)}
+footer{max-width:1160px;margin:0 auto;padding:0 18px 25px;color:var(--muted);font-size:12px}
+@media(max-width:760px){main{grid-template-columns:1fr;margin:14px auto}.preview{min-height:430px}.canvas-wrap{min-height:280px}header{padding:18px}}
+</style>
+</head>
+<body>
+<header><h1>Генератор органайзеров</h1><p>Параметрический вкладыш с равномерной сеткой ячеек · прототип 0.1</p></header>
+<main>
+<section class="panel">
+<h2>Параметры модели</h2>
+<div class="grid2">
+ <div class="field"><label for="w">Ширина, мм</label><input id="w" type="number" min="30" max="500" value="240"></div>
+ <div class="field"><label for="d">Глубина, мм</label><input id="d" type="number" min="30" max="500" value="160"></div>
+ <div class="field"><label for="h">Высота стенок, мм</label><input id="h" type="number" min="10" max="150" value="45"></div>
+ <div class="field"><label for="base">Дно, мм</label><input id="base" type="number" min="1" max="8" step=".2" value="2"></div>
+ <div class="field"><label for="wall">Стенки, мм</label><input id="wall" type="number" min="1" max="6" step=".2" value="1.6"></div>
+ <div class="field"><label for="gap">Зазор по периметру, мм</label><input id="gap" type="number" min="0" max="5" step=".2" value="1"></div>
+ <div class="field"><label for="cols">Ячеек по ширине</label><input id="cols" type="number" min="1" max="12" value="3"></div>
+ <div class="field"><label for="rows">Ячеек по глубине</label><input id="rows" type="number" min="1" max="12" value="2"></div>
+</div>
+<div class="note">Размеры ширины и глубины — внешние габариты готового вкладыша. Зазор вычитается из каждого края. Ячейки распределяются равномерно.</div>
+<button class="primary" id="download">Скачать STL</button>
+<button class="secondary" id="reset">Сбросить параметры</button>
+</section>
+<section class="preview">
+<div class="preview-head"><h2>Предпросмотр сверху</h2><span class="tag">Схематично · не в масштабе экрана</span></div>
+<div class="canvas-wrap" id="canvas"></div>
+<div class="stats" id="stats"></div>
+</section>
+</main>
+<footer>Прототип создаёт сетчатый вкладыш с равномерными ячейками. STL состоит из пересекающихся замкнутых объёмов основания и стенок; перед печатью проверьте модель в слайсере. Следующие версии: скругления, индивидуальные размеры секций, соединение частей и 3MF.</footer>
+<script>
+const ids=['w','d','h','base','wall','gap','cols','rows'];
+const $=id=>document.getElementById(id);
+function values(){
+ const v={}; ids.forEach(k=>v[k]=Number($(k).value));
+ v.cols=Math.max(1,Math.min(12,Math.round(v.cols)));v.rows=Math.max(1,Math.min(12,Math.round(v.rows)));
+ return v;
+}
+function geom(){
+ const v=values(), iw=v.w-2*v.gap, id=v.d-2*v.gap;
+ if(iw<=2*v.wall||id<=2*v.wall||v.h<=0||v.base<=0||v.wall<=0) throw Error('Проверь размеры: полезная область должна быть больше толщины стенок.');
+ return {v,iw,id,cellW:(iw-2*v.wall-(v.cols-1)*v.wall)/v.cols,cellD:(id-2*v.wall-(v.rows-1)*v.wall)/v.rows};
+}
+function render(){
+ try{
+ const g=geom(),{v,iw,id,cellW,cellD}=g;
+ const W=600,H=420,pad=35,scale=Math.min((W-2*pad)/v.w,(H-2*pad)/v.d),x=(W-v.w*scale)/2,y=(H-v.d*scale)/2;
+ let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Схема органайзера"><rect x="${x}" y="${y}" width="${v.w*scale}" height="${v.d*scale}" rx="9" fill="#dfe3f3" stroke="#505b9f" stroke-width="2"/>`;
+ const gx=x+v.gap*scale,gy=y+v.gap*scale,gw=iw*scale,gh=id*scale;
+ s+=`<rect x="${gx}" y="${gy}" width="${gw}" height="${gh}" fill="#f9faff" stroke="#6975c6" stroke-width="1.2"/>`;
+ for(let c=1;c<v.cols;c++){let xx=gx+v.wall*scale+c*cellW*scale+(c-1)*v.wall*scale+v.wall*scale/2;s+=`<rect x="${xx-v.wall*scale/2}" y="${gy}" width="${v.wall*scale}" height="${gh}" fill="#7e89d5"/>`;}
+ for(let r=1;r<v.rows;r++){let yy=gy+v.wall*scale+r*cellD*scale+(r-1)*v.wall*scale+v.wall*scale/2;s+=`<rect x="${gx}" y="${yy-v.wall*scale/2}" width="${gw}" height="${v.wall*scale}" fill="#7e89d5"/>`;}
+ s+='</svg>';$('canvas').innerHTML=s;
+ $('stats').innerHTML=`<span class="stat">Габарит: <b>${v.w} × ${v.d} × ${v.h+v.base} мм</b></span><span class="stat">Ячеек: <b>${v.cols*v.rows}</b></span><span class="stat">Размер ячейки: <b>${cellW.toFixed(1)} × ${cellD.toFixed(1)} мм</b></span>`;
+ }catch(e){$('canvas').innerHTML='<div style="color:#b42318;text-align:center">'+e.message+'</div>';$('stats').innerHTML='';}
+}
+function triangle(a,b,c){return [a,b,c]}
+function boxTriangles(x0,y0,z0,x1,y1,z1){
+ const p=[[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1]];
+ const faces=[[0,2,1],[0,3,2],[4,5,6],[4,6,7],[0,1,5],[0,5,4],[1,2,6],[1,6,5],[2,3,7],[2,7,6],[3,0,4],[3,4,7]];
+ return faces.map(f=>triangle(p[f[0]],p[f[1]],p[f[2]]));
+}
+function normal(t){
+ const [a,b,c]=t,u=[b[0]-a[0],b[1]-a[1],b[2]-a[2]],v=[c[0]-a[0],c[1]-a[1],c[2]-a[2]];
+ let n=[u[1]*v[2]-u[2]*v[1],u[2]*v[0]-u[0]*v[2],u[0]*v[1]-u[1]*v[0]],l=Math.hypot(...n)||1;return n.map(q=>q/l);
+}
+function makeSTL(){
+ const g=geom(),{v,iw,id}=g, t=[];
+ const x0=v.gap,y0=v.gap,x1=v.w-v.gap,y1=v.d-v.gap;
+ // Base slab
+ t.push(...boxTriangles(x0,y0,0,x1,y1,v.base));
+ // Outer perimeter walls
+ t.push(...boxTriangles(x0,y0,v.base,x1,y0+v.wall,v.base+v.h));
+ t.push(...boxTriangles(x0,y1-v.wall,v.base,x1,y1,v.base+v.h));
+ t.push(...boxTriangles(x0,y0+v.wall,v.base,x0+v.wall,y1-v.wall,v.base+v.h));
+ t.push(...boxTriangles(x1-v.wall,y0+v.wall,v.base,x1,y1-v.wall,v.base+v.h));
+ const innerW=iw-2*v.wall,innerD=id-2*v.wall;
+ const cw=(innerW-(v.cols-1)*v.wall)/v.cols,cd=(innerD-(v.rows-1)*v.wall)/v.rows;
+ for(let c=1;c<v.cols;c++){const xx=x0+v.wall+c*cw+(c-1)*v.wall;t.push(...boxTriangles(xx,y0+v.wall,v.base,xx+v.wall,y1-v.wall,v.base+v.h));}
+ for(let r=1;r<v.rows;r++){const yy=y0+v.wall+r*cd+(r-1)*v.wall;t.push(...boxTriangles(x0+v.wall,yy,v.base,x1-v.wall,yy+v.wall,v.base+v.h));}
+ let out='solid organizer\n';
+ for(const tri of t){const n=normal(tri);out+=` facet normal ${n.map(x=>x.toFixed(6)).join(' ')}\n  outer loop\n`;for(const p of tri)out+=`   vertex ${p.map(x=>x.toFixed(4)).join(' ')}\n`;out+='  endloop\n endfacet\n';}
+ return out+'endsolid organizer\n';
+}
+ids.forEach(k=>$(k).addEventListener('input',render));
+$('download').addEventListener('click',()=>{try{const blob=new Blob([makeSTL()],{type:'model/stl'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='drawer-organizer.stl';a.click();URL.revokeObjectURL(url);}catch(e){alert(e.message)}});
+$('reset').addEventListener('click',()=>{const d={w:240,d:160,h:45,base:2,wall:1.6,gap:1,cols:3,rows:2};Object.entries(d).forEach(([k,v])=>$(k).value=v);render();});
+render();
+</script>
+</body></html>
